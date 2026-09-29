@@ -1,0 +1,98 @@
+/* Claim Assist — shared styles for landing + app pages */
+
+:root {
+  --ink: #2B1B14;
+  --ink-soft: #6B5A4E;
+  --paper: #FAF7F2;
+  --panel: #FFFFFF;
+  --kraft: #3D2317;
+  --kraft-dark: #241209;
+  --tape: #FFB500;
+  --tape-dark: #E0A000;
+  --teal: #0091A8;
+  --teal-bg: #E2F2F4;
+  --ok: #4C7A5E;
+  --ok-bg: #E7EFE9;
+  --alert: #B5502D;
+  --alert-bg: #F5E4DC;
+  --line: #E4DACE;
+  --line-soft: #F0E9DE;
+  --shadow: rgba(43,27,20,0.10);
+}
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --ink: #F1E6D8;
+    --ink-soft: #C2AD98;
+    --paper: #1B1310;
+    --panel: #261C16;
+    --tape: #FFC53D;
+    --teal: #3DB8CC;
+    --teal-bg: #17323A;
+    --line: #4A362A;
+    --line-soft: #362619;
+    --ok-bg: #23342A;
+    --alert-bg: #3A281F;
+    --shadow: rgba(0,0,0,0.35);
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #F1E6D8;
+  --ink-soft: #C2AD98;
+  --paper: #1B1310;
+  --panel: #261C16;
+  --tape: #FFC53D;
+  --teal: #3DB8CC;
+  --teal-bg: #17323A;
+  --line: #4A362A;
+  --line-soft: #362619;
+  --ok-bg: #23342A;
+  --alert-bg: #3A281F;
+  --shadow: rgba(0,0,0,0.35);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, sans-serif;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+h1, h2, h3 { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 0.2px; margin: 0; }
+
+a { color: inherit; }
+
+/* ---- Top nav (shared) ---- */
+.topnav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 28px; border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.topnav .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand-mark {
+  width: 32px; height: 32px; border-radius: 4px;
+  background: var(--kraft); color: var(--tape);
+  border: 2px solid var(--tape);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px;
+  transform: rotate(-3deg);
+  flex: 0 0 auto;
+}
+.topnav .brand h1 { font-size: 20px; }
+.topnav .brand span { color: var(--ink-soft); font-size: 12.5px; display: block; margin-top: -2px; }
+.topnav-links { display: flex; align-items: center; gap: 22px; font-size: 14px; font-weight: 500; }
+.topnav-links a { text-decoration: none; color: var(--ink-soft); }
+.topnav-links a:hover { color: var(--ink); }
+
+.btn {
+  font-family: 'Inter', sans-serif; font-weight: 600; font-size: 15px;
+  border-radius: 7px; padding: 11px 22px; cursor: pointer; border: none;
+  display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+}
+.btn-primary { background: var(--ink); color: var(--paper); }
+.btn-primary:hover { background: var(--kraft-dark); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--ink-soft); border: 1.5px solid var(--line); }
+.btn-ghost:hover { border-color: var(--kraft); color: var(--ink); }

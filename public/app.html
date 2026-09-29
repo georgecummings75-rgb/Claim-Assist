@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start a claim — Claim Assist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .app-wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  /* Route tracker */
+  .route { display: flex; align-items: center; margin-bottom: 32px; padding: 0 4px; }
+  .route-stop { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
+  .route-dot {
+    width: 13px; height: 13px; border-radius: 50%;
+    background: var(--line); border: 2px solid var(--line);
+    transition: background .25s, border-color .25s;
+  }
+  .route-stop.done .route-dot { background: var(--kraft); border-color: var(--kraft); }
+  .route-stop.active .route-dot { background: var(--tape); border-color: var(--tape); box-shadow: 0 0 0 4px rgba(255,181,0,0.28); }
+  .route-label { font-size: 11px; color: var(--ink-soft); margin-top: 6px; white-space: nowrap; }
+  .route-stop.active .route-label { color: var(--ink); font-weight: 600; }
+  .route-line { flex: 1 1 auto; height: 2px; background: var(--line); margin: 0 -2px; position: relative; top: -9px; }
+  .route-line.done { background: var(--kraft); }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 28px 28px 24px;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .eyebrow-free { color: var(--ink-soft); font-size: 14px; margin: 6px 0 20px; }
+
+  .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+  @media (max-width: 520px) { .type-grid { grid-template-columns: 1fr; } }
+  .type-card {
+    border: 1.5px solid var(--line); border-radius: 8px; padding: 16px;
+    background: transparent; cursor: pointer; text-align: left;
+    font-family: inherit; color: var(--ink); font-size: 15px;
+    transition: border-color .15s, background .15s;
+  }
+  .type-card:hover { border-color: var(--kraft); background: var(--line-soft); }
+  .type-card.selected { border-color: var(--tape-dark); background: var(--teal-bg); }
+  .type-card strong { display: block; font-size: 16px; margin-bottom: 3px; }
+  .type-card small { color: var(--ink-soft); }
+
+  textarea, input[type=text], input[type=number], select {
+    width: 100%; font-family: inherit; font-size: 15px; color: var(--ink);
+    background: var(--paper); border: 1.5px solid var(--line); border-radius: 7px;
+    padding: 11px 13px; margin-top: 6px;
+  }
+  textarea:focus, input:focus, select:focus { outline: none; border-color: var(--tape-dark); }
+  label { font-size: 14px; font-weight: 600; display: block; margin-top: 18px; }
+  label.first { margin-top: 0; }
+  .hint { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
+
+  .btn-row { display: flex; justify-content: space-between; margin-top: 26px; gap: 10px; }
+
+  .checklist { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .check-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    border: 1.5px solid var(--line); border-radius: 8px; padding: 13px 14px;
+  }
+  .check-item.have { border-color: var(--ok); background: var(--ok-bg); }
+  .check-box {
+    width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--line);
+    flex: 0 0 auto; margin-top: 1px; cursor: pointer; display:flex; align-items:center; justify-content:center;
+    background: var(--panel); font-size: 13px; color: transparent;
+  }
+  .check-item.have .check-box { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .check-text strong { display: block; font-size: 14.5px; }
+  .check-text small { color: var(--ink-soft); }
+  .upload-row { margin-top: 8px; }
+  .upload-btn {
+    font-size: 13px; border: 1.5px dashed var(--line); border-radius: 6px;
+    padding: 6px 12px; background: transparent; cursor: pointer; color: var(--ink-soft);
+  }
+  .thumb-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .thumb { width: 52px; height: 52px; border-radius: 6px; object-fit: cover; border: 1px solid var(--line); }
+
+  .ai-box {
+    margin-top: 20px; border: 1.5px dashed var(--kraft); border-radius: 8px;
+    padding: 14px 16px; background: var(--line-soft); font-size: 14px;
+  }
+  .ai-box.thinking { color: var(--ink-soft); font-style: italic; }
+  .ai-tag {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.3px;
+    background: var(--teal); color: #fff; padding: 2px 7px; border-radius: 4px; margin-right: 8px;
+  }
+  .followups { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .followup-item { font-size: 13.5px; color: var(--ink); padding-left: 14px; border-left: 2px solid var(--kraft); }
+
+  .risk-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 7px; font-weight: 600; font-size: 14px; }
+  .risk-low { background: var(--ok-bg); color: var(--ok); }
+  .risk-med { background: #FBEFDA; color: var(--tape-dark); }
+  .risk-high { background: var(--alert-bg); color: var(--alert); }
+
+  .doc-tabs { display: flex; gap: 6px; margin-top: 22px; margin-bottom: 12px; }
+  .doc-tab {
+    font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 6px 6px 0 0;
+    background: var(--line-soft); color: var(--ink-soft); cursor: pointer; border: 1px solid var(--line); border-bottom: none;
+  }
+  .doc-tab.active { background: var(--panel); color: var(--ink); }
+  .doc-body {
+    border: 1px solid var(--line); border-radius: 0 8px 8px 8px; padding: 20px;
+    background: var(--panel); font-size: 13.5px; white-space: pre-wrap; font-family: 'IBM Plex Mono', monospace;
+    max-height: 420px; overflow-y: auto; line-height: 1.65;
+  }
+  .doc-actions { display: flex; gap: 10px; margin-top: 14px; }
+
+  .tracknum { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink-soft); }
+  .error-note { color: var(--alert); font-size: 13px; margin-top: 8px; }
+  .footer-note { text-align: center; color: var(--ink-soft); font-size: 12px; margin-top: 22px; }
+  .offline-note {
+    max-width: 760px; margin: 0 auto; padding: 10px 20px 0;
+    font-size: 12.5px; color: var(--alert); display: none;
+  }
+  .offline-note.show { display: block; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="index.html">
+    <div class="brand-mark">C</div>
+    <div>
+      <h1>Claim Assist</h1>
+      <span>shipment claim intake</span>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="index.html">← Back home</a>
+  </div>
+</nav>
+
+<div class="offline-note" id="offlineNote">The AI assistant couldn't be reached — continuing with plain form logic so the claim still goes through.</div>
+
+<div class="app-wrap">
+  <div class="route" id="route"></div>
+  <div class="panel" id="panel"></div>
+  <div class="footer-note">Prototype for internal capstone evaluation — not connected to a live carrier claims system.</div>
+</div>
+
+<script>
+const STOPS = ["Start", "Details", "Evidence", "Review", "Done"];
+let step = 0;
+let backendAvailable = true;
+
+const state = {
+  freeText: "",
+  tracking: "",
+  claimType: null,      // damaged | lost | delayed | value_dispute
+  itemDescription: "",
+  declaredValue: "",
+  details: {},           // per-type structured answers
+  checklist: [],         // [{key, label, hint, have, assetUrl}]
+  extraction: null,      // AI extraction result
+  finalDocs: null,       // {customer_packet, staff_summary, risk_level, risk_reasons}
+};
+
+const CLAIM_TYPES = {
+  damaged: {
+    label: "Arrived damaged",
+    hint: "Box or contents were crushed, broken, or wet on arrival",
+    fields: [
+      {key:"packaging_kept", label:"Do you still have the box and packing materials?"},
+      {key:"damage_desc", label:"Describe the damage to the item(s)"},
+    ],
+    checklist: [
+      {key:"photo_damage", label:"Photo of the damaged item", hint:"Clear shot showing the damage itself"},
+      {key:"photo_box", label:"Photo of the outer box", hint:"Show any crushing, punctures, or wet spots"},
+      {key:"photo_label", label:"Photo of the shipping label / tracking number", hint:"Needed to match this claim to the shipment"},
+      {key:"proof_value", label:"Receipt or proof of item value", hint:"Invoice, order confirmation, or appraisal"},
+    ]
+  },
+  lost: {
+    label: "Never arrived (lost)",
+    hint: "Tracking shows no movement or delivery, and it's been missing a while",
+    fields: [
+      {key:"last_status", label:"What does the tracking page currently say?"},
+      {key:"days_since", label:"How many days past the expected delivery date is it?"},
+    ],
+    checklist: [
+      {key:"photo_label", label:"Photo of your shipping receipt", hint:"Shows tracking number and ship date"},
+      {key:"proof_value", label:"Receipt or proof of item value", hint:"Invoice, order confirmation, or appraisal"},
+      {key:"carrier_contact", label:"Confirmation you've checked with the carrier", hint:"Some claims require this first"},
+    ]
+  },
+  delayed: {
+    label: "Arrived late (delayed)",
+    hint: "Package showed up, but well after the expected date",
+    fields: [
+      {key:"expected_date", label:"What was the expected delivery date?"},
+      {key:"impact", label:"How did the delay affect you? (e.g. perishable item, missed event)"},
+    ],
+    checklist: [
+      {key:"photo_label", label:"Photo of your shipping receipt", hint:"Shows service level and ship date"},
+    ]
+  },
+  value_dispute: {
+    label: "Value or contents dispute",
+    hint: "Carrier's payout offer doesn't match the item's real value",
+    fields: [
+      {key:"offered_value", label:"What value has the carrier offered so far, if any?"},
+      {key:"dispute_reason", label:"Why do you believe the value should be different?"},
+    ],
+    checklist: [
+      {key:"proof_value", label:"Receipt, appraisal, or proof of value", hint:"The strongest evidence for a value dispute"},
+      {key:"photo_label", label:"Photo of the shipping label / tracking number", hint:""},
+    ]
+  }
+};
+
+// ---- Rendering ----
+function renderRoute() {
+  const route = document.getElementById('route');
+  route.innerHTML = "";
+  STOPS.forEach((label, i) => {
+    const stop = document.createElement('div');
+    stop.className = 'route-stop' + (i < step ? ' done' : i === step ? ' active' : '');
+    stop.innerHTML = `<div class="route-dot"></div><div class="route-label">${label}</div>`;
+    route.appendChild(stop);
+    if (i < STOPS.length - 1) {
+      const line = document.createElement('div');
+      line.className = 'route-line' + (i < step ? ' done' : '');
+      route.appendChild(line);
+    }
+  });
+}
+
+function goto(n) { step = n; renderRoute(); render(); window.scrollTo({top:0, behavior:'smooth'}); }
+
+function render() {
+  const panel = document.getElementById('panel');
+  if (step === 0) panel.innerHTML = screenStart();
+  else if (step === 1) panel.innerHTML = screenDetails();
+  else if (step === 2) panel.innerHTML = screenEvidence();
+  else if (step === 3) panel.innerHTML = screenReview();
+  else panel.innerHTML = screenDone();
+  wireStep();
+}
+
+function screenStart() {
+  return `
+    <h2 style="font-size:22px;">What happened with your shipment?</h2>
+    <p class="eyebrow-free">Tell us in your own words, or just pick the closest match below.</p>
+    <label class="first">Tracking or receipt number (optional for now)</label>
+    <input type="text" id="tracking" placeholder="1Z... or store receipt #" value="${state.tracking}">
+    <label>Describe what happened</label>
+    <textarea id="freeText" rows="3" placeholder="e.g. The box arrived crushed on one corner and the vase inside was shattered.">${state.freeText}</textarea>
+    <div id="aiArea"></div>
+    <label style="margin-top:22px;">Or choose directly:</label>
+    <div class="type-grid" id="typeGrid">
+      ${Object.entries(CLAIM_TYPES).map(([key, t]) => `
+        <button class="type-card ${state.claimType===key ? 'selected':''}" data-type="${key}">
+          <strong>${t.label}</strong>
+          <small>${t.hint}</small>
+        </button>`).join('')}
+    </div>
+    <div class="btn-row">
+      <span></span>
+      <button class="btn btn-primary" id="toDetails" ${state.claimType ? '' : 'disabled'}>Continue</button>
+    </div>
+  `;
+}
+
+function screenDetails() {
+  const type = CLAIM_TYPES[state.claimType];
+  return `
+    <h2 style="font-size:22px;">${type.label}</h2>
+    <p class="eyebrow-free">A few specifics so we can prep the right paperwork.</p>
+    <label class="first">Item(s) involved</label>
+    <input type="text" id="itemDescription" value="${state.itemDescription}" placeholder="e.g. ceramic vase, 2 books">
+    <label>Estimated value</label>
+    <input type="text" id="declaredValue" value="${state.declaredValue}" placeholder="e.g. $85">
+    ${type.fields.map(f => `
+      <label>${f.label}</label>
+      <textarea rows="2" data-field="${f.key}">${state.details[f.key] || ''}</textarea>
+    `).join('')}
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="back0">Back</button>
+      <button class="btn btn-primary" id="toEvidence">Continue</button>
+    </div>
+  `;
+}
+
+function screenEvidence() {
+  if (state.checklist.length === 0) {
+    state.checklist = CLAIM_TYPES[state.claimType].checklist.map(c => ({...c, have:false, assetUrl:null}));
+  }
+  return `
+    <h2 style="font-size:22px;">Documentation checklist</h2>
+    <p class="eyebrow-free">This is the evidence claims most often get denied for missing. Check off or attach what you have.</p>
+    <div class="checklist">
+      ${state.checklist.map((c,i) => `
+        <div class="check-item ${c.have?'have':''}" data-idx="${i}">
+          <div class="check-box" data-toggle="${i}">${c.have?'✓':''}</div>
+          <div class="check-text" style="flex:1;">
+            <strong>${c.label}</strong>
+            <small>${c.hint}</small>
+            <div class="upload-row">
+              <button class="upload-btn" data-upload="${i}">Attach photo</button>
+              <input type="file" accept="image/*" style="display:none" data-file="${i}">
+              <div class="thumb-row" data-thumbs="${i}">${c.assetUrl ? `<img class="thumb" src="${c.assetUrl}">` : ''}</div>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="back1">Back</button>
+      <button class="btn btn-primary" id="toReview">Continue</button>
+    </div>
+  `;
+}
+
+function screenReview() {
+  return `
+    <h2 style="font-size:22px;">Review & generate</h2>
+    <p class="eyebrow-free">Here's everything collected. Generating your claim packet and staff summary now.</p>
+    <div style="font-size:14px; line-height:1.9;">
+      <div><strong>Claim type:</strong> ${CLAIM_TYPES[state.claimType].label}</div>
+      <div><strong>Tracking:</strong> <span class="tracknum">${state.tracking || '—'}</span></div>
+      <div><strong>Item(s):</strong> ${state.itemDescription || '—'}</div>
+      <div><strong>Estimated value:</strong> ${state.declaredValue || '—'}</div>
+      <div><strong>Evidence attached:</strong> ${state.checklist.filter(c=>c.have).length} / ${state.checklist.length}</div>
+    </div>
+    <div id="genArea" class="ai-box thinking">Generating documents…</div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="back2">Back</button>
+      <span></span>
+    </div>
+  `;
+}
+
+function screenDone() {
+  const docs = state.finalDocs || {customer_packet:"", staff_summary:"", risk_level:"low", risk_reasons:[]};
+  const riskClass = docs.risk_level === 'high' ? 'risk-high' : docs.risk_level === 'medium' ? 'risk-med' : 'risk-low';
+  return `
+    <h2 style="font-size:22px;">Claim packet ready</h2>
+    <p class="eyebrow-free">Give the customer copy to the customer, and keep the staff copy for the file.</p>
+    <div class="risk-badge ${riskClass}">Denial risk: ${docs.risk_level}</div>
+    ${docs.risk_reasons && docs.risk_reasons.length ? `
+      <div class="followups">${docs.risk_reasons.map(r=>`<div class="followup-item">${r}</div>`).join('')}</div>
+    ` : ''}
+    <div class="doc-tabs">
+      <div class="doc-tab active" data-tab="customer">Customer copy</div>
+      <div class="doc-tab" data-tab="staff">Staff copy</div>
+    </div>
+    <div class="doc-body" id="docBody">${escapeHtml(docs.customer_packet)}</div>
+    <div class="doc-actions">
+      <button class="btn btn-ghost" id="printDoc">Print this copy</button>
+      <button class="btn btn-ghost" id="downloadDoc">Download as text</button>
+      <button class="btn btn-primary" id="startOver" style="margin-left:auto;">Start a new claim</button>
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  return (s||"").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ---- Wiring ----
+function wireStep() {
+  if (step === 0) {
+    document.querySelectorAll('.type-card').forEach(btn => {
+      btn.onclick = () => { state.claimType = btn.dataset.type; state.checklist = []; render(); };
+    });
+    document.getElementById('freeText').oninput = e => { state.freeText = e.target.value; scheduleExtraction(); };
+    document.getElementById('tracking').oninput = e => state.tracking = e.target.value;
+    document.getElementById('toDetails').onclick = () => {
+      state.tracking = document.getElementById('tracking').value;
+      goto(1);
+    };
+  }
+  if (step === 1) {
+    document.getElementById('back0').onclick = () => goto(0);
+    document.getElementById('itemDescription').oninput = e => state.itemDescription = e.target.value;
+    document.getElementById('declaredValue').oninput = e => state.declaredValue = e.target.value;
+    document.querySelectorAll('[data-field]').forEach(el => {
+      el.oninput = e => state.details[el.dataset.field] = e.target.value;
+    });
+    document.getElementById('toEvidence').onclick = () => goto(2);
+  }
+  if (step === 2) {
+    document.getElementById('back1').onclick = () => goto(1);
+    document.getElementById('toReview').onclick = () => goto(3);
+    document.querySelectorAll('[data-toggle]').forEach(el => {
+      el.onclick = () => {
+        const i = +el.dataset.toggle;
+        state.checklist[i].have = !state.checklist[i].have;
+        render();
+      };
+    });
+    document.querySelectorAll('[data-upload]').forEach(btn => {
+      btn.onclick = () => document.querySelector(`[data-file="${btn.dataset.upload}"]`).click();
+    });
+    document.querySelectorAll('[data-file]').forEach(input => {
+      input.onchange = (e) => {
+        const i = +input.dataset.file;
+        const file = e.target.files[0];
+        if (!file) return;
+        // Local-only preview (data URL). No storage backend in this prototype —
+        // see README for what a production build would need here.
+        const reader = new FileReader();
+        reader.onload = () => {
+          state.checklist[i].assetUrl = reader.result;
+          state.checklist[i].have = true;
+          render();
+        };
+        reader.readAsDataURL(file);
+      };
+    });
+  }
+  if (step === 3) {
+    document.getElementById('back2').onclick = () => goto(2);
+    runFinalGeneration();
+  }
+  if (step === 4) {
+    document.querySelectorAll('.doc-tab').forEach(tab => {
+      tab.onclick = () => {
+        document.querySelectorAll('.doc-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        const docs = state.finalDocs;
+        document.getElementById('docBody').textContent = tab.dataset.tab === 'customer' ? docs.customer_packet : docs.staff_summary;
+      };
+    });
+    document.getElementById('printDoc').onclick = () => {
+      const w = window.open('', '_blank');
+      w.document.write(`<pre style="font-family: monospace; white-space: pre-wrap; padding: 40px;">${escapeHtml(document.getElementById('docBody').textContent)}</pre>`);
+      w.document.close();
+      w.print();
+    };
+    document.getElementById('downloadDoc').onclick = () => {
+      const text = document.getElementById('docBody').textContent;
+      const active = document.querySelector('.doc-tab.active').dataset.tab;
+      const filename = `claim-${active}-${state.tracking || 'draft'}.txt`;
+      const blob = new Blob([text], {type:'text/plain'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    };
+    document.getElementById('startOver').onclick = () => {
+      Object.assign(state, {freeText:"", tracking:"", claimType:null, itemDescription:"", declaredValue:"", details:{}, checklist:[], extraction:null, finalDocs:null});
+      goto(0);
+    };
+  }
+}
+
+// ---- Backend calls ----
+async function callApi(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`API ${path} returned ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+function flagOffline() {
+  backendAvailable = false;
+  const note = document.getElementById('offlineNote');
+  if (note) note.classList.add('show');
+}
+
+let extractionTimer = null;
+function scheduleExtraction() {
+  clearTimeout(extractionTimer);
+  extractionTimer = setTimeout(runExtraction, 900);
+}
+
+async function runExtraction() {
+  const area = document.getElementById('aiArea');
+  if (!area) return;
+  const text = state.freeText.trim();
+  if (text.length < 12) { area.innerHTML = ''; return; }
+  area.className = 'ai-box thinking';
+  area.innerHTML = 'Reading your description…';
+  try {
+    const result = await callApi('/api/classify', {freeText: text, tracking: state.tracking});
+    if (state.freeText.trim() !== text) return; // stale response, description changed since
+    state.extraction = result;
+    if (result.claim_type && CLAIM_TYPES[result.claim_type]) {
+      state.claimType = result.claim_type;
+      if (result.item_description) state.itemDescription = result.item_description;
+      if (result.declared_value_guess) state.declaredValue = result.declared_value_guess;
+    }
+    area.className = 'ai-box';
+    area.innerHTML = `<span class="ai-tag">AI READ</span>Looks like <strong>${CLAIM_TYPES[result.claim_type]?.label || result.claim_type}</strong> (${Math.round((result.confidence||0)*100)}% confident).`
+      + (result.follow_up_questions?.length ? `<div class="followups">${result.follow_up_questions.map(q=>`<div class="followup-item">${q}</div>`).join('')}</div>` : '');
+    document.querySelectorAll('.type-card').forEach(btn => btn.classList.toggle('selected', btn.dataset.type === state.claimType));
+    const toDetails = document.getElementById('toDetails');
+    if (toDetails) toDetails.disabled = !state.claimType;
+  } catch (err) {
+    flagOffline();
+    area.className = 'ai-box';
+    area.innerHTML = `<span class="ai-tag">AI READ</span>Couldn't auto-classify that — pick a type below instead.`;
+  }
+}
+
+async function runFinalGeneration() {
+  const ctx = {
+    claim_type: state.claimType,
+    tracking: state.tracking,
+    item_description: state.itemDescription,
+    declared_value: state.declaredValue,
+    type_specific_details: state.details,
+    evidence_checklist: state.checklist.map(c => ({item: c.label, provided: c.have})),
+  };
+  try {
+    const result = await callApi('/api/generate', {ctx});
+    state.finalDocs = {
+      customer_packet: result.customer_packet || fallbackDocs(ctx).customer_packet,
+      staff_summary: result.staff_summary || fallbackDocs(ctx).staff_summary,
+      risk_level: result.risk_level || 'medium',
+      risk_reasons: result.risk_reasons || [],
+    };
+  } catch (err) {
+    flagOffline();
+    state.finalDocs = fallbackDocs(ctx);
+  }
+  goto(4);
+}
+
+// Deterministic fallback used only if the AI backend is unreachable, so a
+// claim can still be produced. See README "Failure handling" for why this
+// exists.
+function fallbackDocs(ctx) {
+  const missing = ctx.evidence_checklist.filter(e => !e.provided).map(e => e.item);
+  const risk = missing.length >= 2 ? 'high' : missing.length === 1 ? 'medium' : 'low';
+  const customer = `CLAIM SUMMARY\n\nClaim type: ${CLAIM_TYPES[ctx.claim_type].label}\nTracking number: ${ctx.tracking || 'not provided'}\nItem(s): ${ctx.item_description || 'not specified'}\nEstimated value: ${ctx.declared_value || 'not specified'}\n\nDetails:\n${Object.entries(ctx.type_specific_details).map(([k,v])=>`- ${k.replace(/_/g,' ')}: ${v||'(blank)'}`).join('\n')}\n\nEvidence provided:\n${ctx.evidence_checklist.map(e=>`- [${e.provided?'x':' '}] ${e.item}`).join('\n')}\n\nNext step: Bring this summary plus any missing items above to the counter to file your claim.`;
+  const staff = `INTERNAL SUMMARY\nType: ${ctx.claim_type} | Tracking: ${ctx.tracking||'—'}\nMissing: ${missing.length ? missing.join('; ') : 'none'}\nRecommendation: ${missing.length ? 'Collect missing evidence before submitting.' : 'Ready to submit.'}`;
+  return {customer_packet: customer, staff_summary: staff, risk_level: risk, risk_reasons: missing.map(m=>`Missing: ${m}`)};
+}
+
+// ---- Boot ----
+renderRoute();
+render();
+</script>
+</body>
+</html>

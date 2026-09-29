@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claim Assist — AI-guided shipment claim intake</title>
+<meta name="description" content="Claim Assist walks customers through filing a shipment claim, collects the right evidence up front, and hands the store a clean, submission-ready packet.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .hero {
+    max-width: 920px; margin: 0 auto; padding: 72px 24px 40px;
+  }
+  .hero-eyebrow { color: var(--teal); font-weight: 600; font-size: 14px; margin-bottom: 14px; }
+  .hero h2 {
+    font-size: clamp(34px, 5.5vw, 54px); line-height: 1.05; max-width: 720px;
+  }
+  .hero p.lead {
+    font-size: 18px; color: var(--ink-soft); max-width: 560px; margin-top: 20px; line-height: 1.6;
+  }
+  .hero-cta { margin-top: 32px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .hero-note { font-size: 13px; color: var(--ink-soft); }
+
+  .stamp {
+    position: relative; display: inline-block; margin-top: 40px;
+  }
+
+  .strip {
+    background: var(--kraft); color: var(--paper);
+    padding: 14px 0; overflow: hidden; white-space: nowrap;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; letter-spacing: 0.4px;
+  }
+  .strip span { padding: 0 28px; opacity: 0.85; }
+
+  .problem {
+    max-width: 920px; margin: 0 auto; padding: 64px 24px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 48px;
+  }
+  @media (max-width: 720px) { .problem { grid-template-columns: 1fr; } }
+  .problem h3 { font-size: 28px; margin-bottom: 16px; }
+  .problem p { color: var(--ink-soft); font-size: 15.5px; line-height: 1.65; }
+  .stat-list { display: flex; flex-direction: column; gap: 18px; }
+  .stat-item { display: flex; gap: 16px; align-items: flex-start; border-top: 1px solid var(--line); padding-top: 16px; }
+  .stat-item:first-child { border-top: none; padding-top: 0; }
+  .stat-num { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 30px; color: var(--kraft); flex: 0 0 78px; }
+  .stat-text { font-size: 14.5px; color: var(--ink-soft); padding-top: 6px; }
+
+  .flow {
+    max-width: 960px; margin: 0 auto; padding: 20px 24px 72px;
+  }
+  .flow h3 { font-size: 28px; margin-bottom: 6px; }
+  .flow > p { color: var(--ink-soft); font-size: 15.5px; margin-bottom: 32px; }
+  .flow-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  @media (max-width: 800px) { .flow-grid { grid-template-columns: 1fr; } }
+  .flow-step {
+    padding: 26px 22px; border-right: 1px solid var(--line); background: var(--panel);
+  }
+  .flow-step:last-child { border-right: none; }
+  @media (max-width: 800px) { .flow-step { border-right: none; border-bottom: 1px solid var(--line); } .flow-step:last-child { border-bottom: none; } }
+  .flow-step .n { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--teal); font-weight: 600; }
+  .flow-step h4 { font-size: 17px; margin: 10px 0 8px; font-family: 'Inter', sans-serif; font-weight: 700; }
+  .flow-step p { font-size: 13.5px; color: var(--ink-soft); line-height: 1.55; margin: 0; }
+
+  .split {
+    max-width: 920px; margin: 0 auto; padding: 20px 24px 80px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 28px;
+  }
+  @media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
+  .card {
+    border: 1px solid var(--line); border-radius: 10px; padding: 26px;
+    background: var(--panel);
+  }
+  .card .tag {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+    padding: 3px 9px; border-radius: 5px; margin-bottom: 14px;
+  }
+  .tag-customer { background: var(--teal-bg); color: var(--teal); }
+  .tag-staff { background: var(--ok-bg); color: var(--ok); }
+  .card h4 { font-size: 19px; margin-bottom: 10px; }
+  .card p { color: var(--ink-soft); font-size: 14px; line-height: 1.6; margin: 0; }
+
+  .cta-band {
+    background: var(--kraft); color: var(--paper);
+    padding: 60px 24px; text-align: center;
+  }
+  .cta-band h3 { font-size: 30px; color: var(--paper); margin-bottom: 12px; }
+  .cta-band p { color: #E9DCC9; font-size: 15px; margin-bottom: 26px; }
+  .cta-band .btn-primary { background: var(--tape); color: var(--kraft-dark); }
+  .cta-band .btn-primary:hover { background: var(--tape-dark); }
+
+  footer {
+    text-align: center; padding: 28px 24px; font-size: 12.5px; color: var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="index.html">
+    <div class="brand-mark">C</div>
+    <div>
+      <h1>Claim Assist</h1>
+      <span>shipment claim intake</span>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="#flow">How it works</a>
+    <a href="#outputs">What you get</a>
+    <a class="btn btn-primary" href="app.html">Start a claim</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">Built for in-store shipment claim intake</div>
+  <h2>Get a complete, submission-ready claim on the first try.</h2>
+  <p class="lead">Claim Assist interviews the customer, tells them exactly what documentation is missing, and generates a clean packet for them and a summary for your staff — before the claim ever gets filed.</p>
+  <div class="hero-cta">
+    <a class="btn btn-primary" href="app.html">Start a claim →</a>
+    <span class="hero-note">No account needed — try it as a customer would.</span>
+  </div>
+</div>
+
+<div class="strip">
+  <span>DAMAGED IN TRANSIT</span><span>LOST PACKAGE</span><span>DELAYED SHIPMENT</span><span>VALUE DISPUTE</span><span>DAMAGED IN TRANSIT</span><span>LOST PACKAGE</span><span>DELAYED SHIPMENT</span><span>VALUE DISPUTE</span><span>DAMAGED IN TRANSIT</span><span>LOST PACKAGE</span><span>DELAYED SHIPMENT</span><span>VALUE DISPUTE</span>
+</div>
+
+<div class="problem">
+  <div>
+    <h3>Claims fail for the same avoidable reasons</h3>
+    <p>Most denials and delays don't come from the loss itself — they come from missing photos, no proof of value, or a packet that never made it to the counter in a usable form. By the time an associate notices what's missing, the customer has already left.</p>
+    <p style="margin-top:14px;">Claim Assist front-loads that work: the checklist is specific to the claim type, so nothing gets discovered after the fact.</p>
+  </div>
+  <div class="stat-list">
+    <div class="stat-item">
+      <div class="stat-num">01</div>
+      <div class="stat-text">Customer describes the issue in their own words — no claims jargon required.</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">02</div>
+      <div class="stat-text">The right questions and evidence checklist appear automatically for that claim type.</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">03</div>
+      <div class="stat-text">Two documents come out the other end — one for the customer, one for the file.</div>
+    </div>
+  </div>
+</div>
+
+<div class="flow" id="flow">
+  <h3>How a claim moves through it</h3>
+  <p>Four short steps, done once, at the time the problem is reported.</p>
+  <div class="flow-grid">
+    <div class="flow-step">
+      <div class="n">STEP 1</div>
+      <h4>Describe it</h4>
+      <p>Customer types what happened. The system reads it and identifies the claim type on its own.</p>
+    </div>
+    <div class="flow-step">
+      <div class="n">STEP 2</div>
+      <h4>Answer specifics</h4>
+      <p>A short set of questions tailored to that claim type — packaging kept, tracking status, expected date.</p>
+    </div>
+    <div class="flow-step">
+      <div class="n">STEP 3</div>
+      <h4>Attach evidence</h4>
+      <p>A checklist shows exactly what's needed, with photo upload built in — not a generic list.</p>
+    </div>
+    <div class="flow-step">
+      <div class="n">STEP 4</div>
+      <h4>Get the packet</h4>
+      <p>A customer copy and a staff copy are generated, with a denial-risk flag if something's still missing.</p>
+    </div>
+  </div>
+</div>
+
+<div class="split" id="outputs">
+  <div class="card">
+    <span class="tag tag-customer">CUSTOMER COPY</span>
+    <h4>A packet they can actually submit</h4>
+    <p>Plain-language summary of the incident, an itemized list of the evidence attached, and clear next steps — formatted and ready to print or hand over.</p>
+  </div>
+  <div class="card">
+    <span class="tag tag-staff">STAFF COPY</span>
+    <h4>What your team needs at a glance</h4>
+    <p>Claim type, tracking number, and a flagged list of anything still missing — plus a straight recommendation on whether it's ready to submit.</p>
+  </div>
+</div>
+
+<div class="cta-band">
+  <h3>See it with a real scenario</h3>
+  <p>Walk through an actual claim — no setup, nothing saved.</p>
+  <a class="btn btn-primary" href="app.html">Start a claim →</a>
+</div>
+
+<footer>
+  Claim Assist is a prototype built for internal evaluation. Not connected to a live carrier claims system.
+</footer>
+
+</body>
+</html>

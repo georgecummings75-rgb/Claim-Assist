@@ -17,6 +17,7 @@
   --alert-bg: #F5E4DC;
   --line: #E4DACE;
   --line-soft: #F0E9DE;
+  --field-border: #C9B39B;
   --shadow: rgba(43,27,20,0.10);
 }
 :root:not([data-theme="light"]) {
@@ -30,6 +31,7 @@
     --teal-bg: #17323A;
     --line: #4A362A;
     --line-soft: #362619;
+    --field-border: #6B5540;
     --ok-bg: #23342A;
     --alert-bg: #3A281F;
     --shadow: rgba(0,0,0,0.35);
@@ -45,6 +47,7 @@
   --teal-bg: #17323A;
   --line: #4A362A;
   --line-soft: #362619;
+  --field-border: #6B5540;
   --ok-bg: #23342A;
   --alert-bg: #3A281F;
   --shadow: rgba(0,0,0,0.35);

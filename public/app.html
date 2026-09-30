@@ -20,7 +20,7 @@
     transition: background .25s, border-color .25s;
   }
   .route-stop.done .route-dot { background: var(--kraft); border-color: var(--kraft); }
-  .route-stop.active .route-dot { background: var(--tape); border-color: var(--tape); box-shadow: 0 0 0 4px rgba(255,209,1,0.30); }
+  .route-stop.active .route-dot { background: var(--tape); border-color: var(--tape); animation: pulseRing 1.8s ease-out infinite; }
   .route-label { font-size: 11px; color: var(--ink-soft); margin-top: 6px; white-space: nowrap; }
   .route-stop.active .route-label { color: var(--ink); font-weight: 600; }
   .route-line { flex: 1 1 auto; height: 2px; background: var(--line); margin: 0 -2px; position: relative; top: -9px; }
@@ -33,6 +33,7 @@
     padding: 28px 28px 24px;
     box-shadow: 0 1px 3px var(--shadow);
   }
+  .panel.enter { animation: riseIn .32s ease both; }
   .eyebrow-free { color: var(--ink-soft); font-size: 14px; margin: 6px 0 20px; }
 
   .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
@@ -72,7 +73,8 @@
     flex: 0 0 auto; margin-top: 1px; cursor: pointer; display:flex; align-items:center; justify-content:center;
     background: var(--panel); font-size: 13px; color: transparent;
   }
-  .check-item.have .check-box { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .check-item.have .check-box { background: var(--ok); border-color: var(--ok); color: #fff; animation: popIn .25s ease; }
+  .check-item { transition: border-color .2s ease, background .2s ease; }
   .check-text strong { display: block; font-size: 14.5px; }
   .check-text small { color: var(--ink-soft); }
   .upload-row { margin-top: 8px; }
@@ -116,6 +118,7 @@
   .tracknum { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink-soft); }
   .error-note { color: var(--alert); font-size: 13px; margin-top: 8px; }
   .footer-note { text-align: center; color: var(--ink-soft); font-size: 12px; margin-top: 22px; }
+  #emailStatus { transition: opacity .25s ease; }
   .offline-note {
     max-width: 760px; margin: 0 auto; padding: 10px 20px 0;
     font-size: 12.5px; color: var(--alert); display: none;
@@ -237,11 +240,18 @@ function goto(n) { step = n; renderRoute(); render(); window.scrollTo({top:0, be
 
 function render() {
   const panel = document.getElementById('panel');
+  // Restart the enter animation on every screen change, even between the
+  // same two steps in a row (Back then Continue), by removing the class,
+  // forcing a reflow, then re-adding it — the standard trick for replaying
+  // a CSS animation on an element that never left the DOM.
+  panel.classList.remove('enter');
+  void panel.offsetWidth;
   if (step === 0) panel.innerHTML = screenStart();
   else if (step === 1) panel.innerHTML = screenDetails();
   else if (step === 2) panel.innerHTML = screenEvidence();
   else if (step === 3) panel.innerHTML = screenReview();
   else panel.innerHTML = screenDone();
+  panel.classList.add('enter');
   wireStep();
 }
 
@@ -330,7 +340,7 @@ function screenReview() {
       <div><strong>Estimated value:</strong> ${state.declaredValue || '—'}</div>
       <div><strong>Evidence attached:</strong> ${state.checklist.filter(c=>c.have).length} / ${state.checklist.length}</div>
     </div>
-    <div id="genArea" class="ai-box thinking">Generating documents…</div>
+    <div id="genArea" class="ai-box thinking"><span class="spinner"></span>Generating documents…</div>
     <div class="btn-row">
       <button class="btn btn-ghost" id="back2">Back</button>
       <span></span>
@@ -451,9 +461,16 @@ function wireStep() {
     document.getElementById('emailDoc').onclick = async () => {
       const status = document.getElementById('emailStatus');
       const btn = document.getElementById('emailDoc');
+      const swap = (color, html) => {
+        status.style.opacity = '0';
+        setTimeout(() => {
+          status.style.color = color;
+          status.innerHTML = html;
+          status.style.opacity = '1';
+        }, 150);
+      };
       btn.disabled = true;
-      status.style.color = 'var(--ink-soft)';
-      status.textContent = 'Sending…';
+      swap('var(--ink-soft)', '<span class="spinner"></span>Sending…');
       try {
         const result = await callApi('/api/send-claim', {
           customerPacket: state.finalDocs.customer_packet,
@@ -461,11 +478,9 @@ function wireStep() {
           claimType: state.claimType,
           tracking: state.tracking,
         });
-        status.style.color = 'var(--ok)';
-        status.textContent = `Sent to ${result.sentTo}.`;
+        swap('var(--ok)', `Sent to ${result.sentTo}.`);
       } catch (err) {
-        status.style.color = 'var(--alert)';
-        status.textContent = 'Could not send the email — check that email is configured on the server.';
+        swap('var(--alert)', 'Could not send the email — check that email is configured on the server.');
       } finally {
         btn.disabled = false;
       }
@@ -508,7 +523,7 @@ async function runExtraction() {
   const text = state.freeText.trim();
   if (text.length < 12) { area.innerHTML = ''; return; }
   area.className = 'ai-box thinking';
-  area.innerHTML = 'Reading your description…';
+  area.innerHTML = '<span class="spinner"></span>Reading your description…';
   try {
     const result = await callApi('/api/classify', {freeText: text, tracking: state.tracking});
     if (state.freeText.trim() !== text) return; // stale response, description changed since

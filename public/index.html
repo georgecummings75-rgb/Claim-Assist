@@ -23,6 +23,15 @@
   .hero-cta { margin-top: 32px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
   .hero-note { font-size: 13px; color: var(--ink-soft); }
 
+  /* One orchestrated entrance for the hero, staggered top to bottom */
+  .hero-eyebrow, .hero h2, .hero p.lead, .hero-cta {
+    opacity: 0; animation: riseIn .7s ease both;
+  }
+  .hero-eyebrow { animation-delay: .05s; }
+  .hero h2 { animation-delay: .15s; }
+  .hero p.lead { animation-delay: .3s; }
+  .hero-cta { animation-delay: .42s; }
+
   .stamp {
     position: relative; display: inline-block; margin-top: 40px;
   }
@@ -32,7 +41,26 @@
     padding: 14px 0; overflow: hidden; white-space: nowrap;
     font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; letter-spacing: 0.4px;
   }
+  .strip-track {
+    display: inline-flex; width: max-content;
+    animation: marquee 24s linear infinite;
+  }
+  .strip:hover .strip-track { animation-play-state: paused; }
   .strip span { padding: 0 28px; opacity: 0.85; }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Scroll-reveal for everything below the fold */
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s ease; }
+  .reveal.in-view { opacity: 1; transform: translateY(0); }
+  .flow-grid.reveal .flow-step { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s ease; }
+  .flow-grid.reveal.in-view .flow-step { opacity: 1; transform: translateY(0); }
+  .flow-grid.reveal.in-view .flow-step:nth-child(1) { transition-delay: .05s; }
+  .flow-grid.reveal.in-view .flow-step:nth-child(2) { transition-delay: .15s; }
+  .flow-grid.reveal.in-view .flow-step:nth-child(3) { transition-delay: .25s; }
+  .flow-grid.reveal.in-view .flow-step:nth-child(4) { transition-delay: .35s; }
 
   .problem {
     max-width: 920px; margin: 0 auto; padding: 64px 24px;
@@ -123,10 +151,13 @@
 </div>
 
 <div class="strip">
-  <span>DAMAGED IN TRANSIT</span><span>LOST PACKAGE</span><span>DELAYED SHIPMENT</span><span>VALUE DISPUTE</span><span>DAMAGED IN TRANSIT</span><span>LOST PACKAGE</span><span>DELAYED SHIPMENT</span><span>VALUE DISPUTE</span><span>DAMAGED IN TRANSIT</span><span>LOST PACKAGE</span><span>DELAYED SHIPMENT</span><span>VALUE DISPUTE</span>
+  <div class="strip-track">
+    <span>DAMAGED IN TRANSIT</span><span>LOST PACKAGE</span><span>DELAYED SHIPMENT</span><span>VALUE DISPUTE</span>
+    <span>DAMAGED IN TRANSIT</span><span>LOST PACKAGE</span><span>DELAYED SHIPMENT</span><span>VALUE DISPUTE</span>
+  </div>
 </div>
 
-<div class="problem">
+<div class="problem reveal">
   <div>
     <h3>Claims fail for the same avoidable reasons</h3>
     <p>Most denials and delays don't come from the loss itself — they come from missing photos, no proof of value, or a packet that never made it to the counter in a usable form. By the time an associate notices what's missing, the customer has already left.</p>
@@ -151,7 +182,7 @@
 <div class="flow" id="flow">
   <h3>How a claim moves through it</h3>
   <p>Four short steps, done once, at the time the problem is reported.</p>
-  <div class="flow-grid">
+  <div class="flow-grid reveal">
     <div class="flow-step">
       <div class="n">STEP 1</div>
       <h4>Describe it</h4>
@@ -175,7 +206,7 @@
   </div>
 </div>
 
-<div class="split" id="outputs">
+<div class="split reveal" id="outputs">
   <div class="card">
     <span class="tag tag-customer">CUSTOMER COPY</span>
     <h4>A packet they can actually submit</h4>
@@ -188,7 +219,7 @@
   </div>
 </div>
 
-<div class="cta-band">
+<div class="cta-band reveal">
   <h3>See it with a real scenario</h3>
   <p>Walk through an actual claim — no setup, nothing saved.</p>
   <a class="btn btn-primary" href="app.html">Start a claim →</a>
@@ -198,5 +229,23 @@
   Claim Assist is a prototype built for internal evaluation. Not connected to a live carrier claims system.
 </footer>
 
+<script>
+  // Reveal each section once as it scrolls into view, then stop watching it.
+  const revealTargets = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window && revealTargets.length) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    revealTargets.forEach(el => io.observe(el));
+  } else {
+    // No IntersectionObserver support — just show everything.
+    revealTargets.forEach(el => el.classList.add('in-view'));
+  }
+</script>
 </body>
 </html>

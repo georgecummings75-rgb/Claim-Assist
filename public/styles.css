@@ -96,6 +96,7 @@ a { color: inherit; }
 .topnav-links { display: flex; align-items: center; gap: 22px; font-size: 14px; font-weight: 500; }
 .topnav-links a { text-decoration: none; color: var(--ink-soft); }
 .topnav-links a:hover { color: var(--kraft); }
+.topnav-links a.btn-primary, .topnav-links a.btn-primary:hover { color: #fff; }
 
 .btn {
   font-family: 'Inter', sans-serif; font-weight: 600; font-size: 15px;

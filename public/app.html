@@ -6,7 +6,7 @@
 <title>Start a claim — Claim Assist</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
   .app-wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
@@ -20,7 +20,7 @@
     transition: background .25s, border-color .25s;
   }
   .route-stop.done .route-dot { background: var(--kraft); border-color: var(--kraft); }
-  .route-stop.active .route-dot { background: var(--tape); border-color: var(--tape); box-shadow: 0 0 0 4px rgba(255,181,0,0.28); }
+  .route-stop.active .route-dot { background: var(--tape); border-color: var(--tape); box-shadow: 0 0 0 4px rgba(255,209,1,0.30); }
   .route-label { font-size: 11px; color: var(--ink-soft); margin-top: 6px; white-space: nowrap; }
   .route-stop.active .route-label { color: var(--ink); font-weight: 600; }
   .route-line { flex: 1 1 auto; height: 2px; background: var(--line); margin: 0 -2px; position: relative; top: -9px; }
@@ -53,7 +53,7 @@
     background: var(--panel); border: 1.5px solid var(--field-border); border-radius: 7px;
     padding: 11px 13px; margin-top: 6px;
   }
-  textarea:focus, input:focus, select:focus { outline: none; border-color: var(--tape-dark); box-shadow: 0 0 0 3px rgba(224,160,0,0.18); }
+  textarea:focus, input:focus, select:focus { outline: none; border-color: var(--kraft); box-shadow: 0 0 0 3px rgba(0,114,138,0.16); }
   textarea::placeholder, input::placeholder { color: var(--ink-soft); opacity: 0.85; }
   label { font-size: 14px; font-weight: 600; display: block; margin-top: 18px; }
   label.first { margin-top: 0; }
@@ -356,8 +356,10 @@ function screenDone() {
     <div class="doc-actions">
       <button class="btn btn-ghost" id="printDoc">Print this copy</button>
       <button class="btn btn-ghost" id="downloadDoc">Download as text</button>
+      <button class="btn btn-ghost" id="emailDoc">Email this claim</button>
       <button class="btn btn-primary" id="startOver" style="margin-left:auto;">Start a new claim</button>
     </div>
+    <div id="emailStatus" style="font-size:13px; margin-top:10px; min-height:18px;"></div>
   `;
 }
 
@@ -445,6 +447,28 @@ function wireStep() {
       a.href = URL.createObjectURL(blob);
       a.download = filename;
       a.click();
+    };
+    document.getElementById('emailDoc').onclick = async () => {
+      const status = document.getElementById('emailStatus');
+      const btn = document.getElementById('emailDoc');
+      btn.disabled = true;
+      status.style.color = 'var(--ink-soft)';
+      status.textContent = 'Sending…';
+      try {
+        const result = await callApi('/api/send-claim', {
+          customerPacket: state.finalDocs.customer_packet,
+          staffSummary: state.finalDocs.staff_summary,
+          claimType: state.claimType,
+          tracking: state.tracking,
+        });
+        status.style.color = 'var(--ok)';
+        status.textContent = `Sent to ${result.sentTo}.`;
+      } catch (err) {
+        status.style.color = 'var(--alert)';
+        status.textContent = 'Could not send the email — check that email is configured on the server.';
+      } finally {
+        btn.disabled = false;
+      }
     };
     document.getElementById('startOver').onclick = () => {
       Object.assign(state, {freeText:"", tracking:"", claimType:null, itemDescription:"", declaredValue:"", details:{}, checklist:[], extraction:null, finalDocs:null});

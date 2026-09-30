@@ -1,56 +1,65 @@
-/* Claim Assist — shared styles for landing + app pages */
+/* Claim Assist — shared styles for landing + app pages
+   Palette sampled directly from theupsstore.com (teal #009CBD, gold #FFD101,
+   charcoal text #232524) — matches the brand's real colors without
+   reproducing their shield logo or photography. */
 
 :root {
-  --ink: #2B1B14;
-  --ink-soft: #6B5A4E;
-  --paper: #FAF7F2;
+  --ink: #232524;
+  --ink-soft: #5F6A6A;
+  --paper: #F5FAFB;
   --panel: #FFFFFF;
-  --kraft: #3D2317;
-  --kraft-dark: #241209;
-  --tape: #FFB500;
-  --tape-dark: #E0A000;
-  --teal: #0091A8;
-  --teal-bg: #E2F2F4;
+  --kraft: #00728A;
+  --kraft-dark: #00596E;
+  --tape: #FFD101;
+  --tape-dark: #E6BC00;
+  --teal: #00AEC7;
+  --teal-bg: #E0F5F9;
   --ok: #4C7A5E;
   --ok-bg: #E7EFE9;
   --alert: #B5502D;
   --alert-bg: #F5E4DC;
-  --line: #E4DACE;
-  --line-soft: #F0E9DE;
-  --field-border: #C9B39B;
-  --shadow: rgba(43,27,20,0.10);
+  --line: #DCE6E8;
+  --line-soft: #EEF5F6;
+  --field-border: #8FB9C2;
+  --shadow: rgba(0,53,64,0.10);
 }
 :root:not([data-theme="light"]) {
   @media (prefers-color-scheme: dark) {
-    --ink: #F1E6D8;
-    --ink-soft: #C2AD98;
-    --paper: #1B1310;
-    --panel: #261C16;
-    --tape: #FFC53D;
-    --teal: #3DB8CC;
-    --teal-bg: #17323A;
-    --line: #4A362A;
-    --line-soft: #362619;
-    --field-border: #6B5540;
-    --ok-bg: #23342A;
+    --ink: #E8F2F4;
+    --ink-soft: #A9BEC2;
+    --paper: #0E1B1F;
+    --panel: #16262B;
+    --kraft: #00AEC7;
+    --kraft-dark: #33C6E0;
+    --tape: #FFDB4D;
+    --tape-dark: #FFC61A;
+    --teal: #33C6E0;
+    --teal-bg: #113640;
+    --line: #2C4148;
+    --line-soft: #1E323A;
+    --field-border: #3E6470;
+    --ok-bg: #1F3630;
     --alert-bg: #3A281F;
-    --shadow: rgba(0,0,0,0.35);
+    --shadow: rgba(0,0,0,0.4);
   }
 }
 :root[data-theme="dark"] {
-  --ink: #F1E6D8;
-  --ink-soft: #C2AD98;
-  --paper: #1B1310;
-  --panel: #261C16;
-  --tape: #FFC53D;
-  --teal: #3DB8CC;
-  --teal-bg: #17323A;
-  --line: #4A362A;
-  --line-soft: #362619;
-  --field-border: #6B5540;
-  --ok-bg: #23342A;
+  --ink: #E8F2F4;
+  --ink-soft: #A9BEC2;
+  --paper: #0E1B1F;
+  --panel: #16262B;
+  --kraft: #00AEC7;
+  --kraft-dark: #33C6E0;
+  --tape: #FFDB4D;
+  --tape-dark: #FFC61A;
+  --teal: #33C6E0;
+  --teal-bg: #113640;
+  --line: #2C4148;
+  --line-soft: #1E323A;
+  --field-border: #3E6470;
+  --ok-bg: #1F3630;
   --alert-bg: #3A281F;
-  --shadow: rgba(0,0,0,0.35);
+  --shadow: rgba(0,0,0,0.4);
 }
 
 * { box-sizing: border-box; }
@@ -63,7 +72,7 @@ body {
   min-height: 100vh;
 }
 
-h1, h2, h3 { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 0.2px; margin: 0; }
+h1, h2, h3 { font-family: 'Lora', Georgia, serif; font-weight: 700; letter-spacing: 0.1px; margin: 0; }
 
 a { color: inherit; }
 
@@ -76,26 +85,25 @@ a { color: inherit; }
 .topnav .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .brand-mark {
   width: 32px; height: 32px; border-radius: 4px;
-  background: var(--kraft); color: var(--tape);
+  background: var(--kraft); color: #fff;
   border: 2px solid var(--tape);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px;
-  transform: rotate(-3deg);
+  font-family: 'Lora', Georgia, serif; font-weight: 700; font-size: 17px;
   flex: 0 0 auto;
 }
 .topnav .brand h1 { font-size: 20px; }
-.topnav .brand span { color: var(--ink-soft); font-size: 12.5px; display: block; margin-top: -2px; }
+.topnav .brand span { color: var(--ink-soft); font-size: 12.5px; display: block; margin-top: -2px; font-family: 'Inter', sans-serif; }
 .topnav-links { display: flex; align-items: center; gap: 22px; font-size: 14px; font-weight: 500; }
 .topnav-links a { text-decoration: none; color: var(--ink-soft); }
-.topnav-links a:hover { color: var(--ink); }
+.topnav-links a:hover { color: var(--kraft); }
 
 .btn {
   font-family: 'Inter', sans-serif; font-weight: 600; font-size: 15px;
   border-radius: 7px; padding: 11px 22px; cursor: pointer; border: none;
   display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
 }
-.btn-primary { background: var(--ink); color: var(--paper); }
+.btn-primary { background: var(--kraft); color: #fff; }
 .btn-primary:hover { background: var(--kraft-dark); }
 .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-ghost { background: transparent; color: var(--ink-soft); border: 1.5px solid var(--line); }
-.btn-ghost:hover { border-color: var(--kraft); color: var(--ink); }
+.btn-ghost:hover { border-color: var(--kraft); color: var(--kraft); }

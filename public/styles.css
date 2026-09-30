@@ -136,11 +136,31 @@ a { color: inherit; }
   vertical-align: -2px;
 }
 
+/* Reduced motion: many phones (iPhone "Reduce Motion", Android "Remove
+   animations") ask sites to avoid movement. Instead of switching every
+   animation off, keep gentle fades and drop only the sliding, scaling
+   and bouncing, so these visitors still get a polished page. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
+  html { scroll-behavior: auto; }
+  @keyframes riseIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
+  @keyframes popIn {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+  }
+  .btn-primary:hover, .btn-primary:active, .btn-ghost:active { transform: none; }
+}
+
+/* ---- Small screens (phones) ---- */
+.btn { white-space: nowrap; }
+@media (max-width: 640px) {
+  .topnav { padding: 12px 16px; gap: 12px; }
+  .topnav .brand h1 { font-size: 18px; white-space: nowrap; }
+  .topnav .brand span { display: none; }
+  .topnav-links { gap: 12px; }
+  .topnav-links a:not(.btn) { display: none; }
+  .topnav-links a[href="index.html"] { display: inline; white-space: nowrap; }
+  .topnav-links .btn { padding: 9px 14px; font-size: 14px; }
 }

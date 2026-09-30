@@ -121,6 +121,29 @@
   footer {
     text-align: center; padding: 28px 24px; font-size: 12.5px; color: var(--ink-soft);
   }
+
+  /* Phones: tighter spacing so the hero fits the screen */
+  @media (max-width: 640px) {
+    .hero { padding: 40px 20px 32px; }
+    .hero p.lead { font-size: 16.5px; }
+    .problem { padding: 44px 20px; gap: 32px; }
+    .flow, .split { padding-left: 20px; padding-right: 20px; }
+    .cta-band { padding: 44px 20px; }
+  }
+
+  /* Reduced motion: sections fade in without sliding, and the banner
+     shows all four claim types standing still instead of scrolling. */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal, .reveal.in-view,
+    .flow-grid.reveal .flow-step, .flow-grid.reveal.in-view .flow-step { transform: none; }
+    .strip { white-space: normal; }
+    .strip-track {
+      animation: none; width: auto;
+      flex-wrap: wrap; justify-content: center; row-gap: 6px;
+    }
+    .strip-track { display: flex; }
+    .strip span:nth-child(n+5) { display: none; }
+  }
 </style>
 </head>
 <body>

@@ -19,7 +19,6 @@ const express = require('express');
 const path = require('path');
 const zlib = require('zlib');
 const Anthropic = require('@anthropic-ai/sdk');
-const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,17 +27,13 @@ const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5';
 const apiKey = process.env.ANTHROPIC_API_KEY;
 const anthropic = apiKey ? new Anthropic({ apiKey }) : null;
 
-const gmailUser = process.env.GMAIL_USER;
-const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
-const ownerEmail = process.env.OWNER_EMAIL || gmailUser;
+// Email goes out through Brevo's HTTPS API. (Render's free plan blocks the SMTP
+// ports Gmail needs, so SMTP would just hang until it times out.)
+const brevoKey = process.env.BREVO_API_KEY;
+const senderEmail = process.env.BREVO_SENDER_EMAIL; // must be verified in Brevo
 // Where "Send to store" claims go (override with STORE_EMAIL if it ever changes).
 const storeEmail = process.env.STORE_EMAIL || 'store7041@theupsstore.com';
-const mailer = (gmailUser && gmailAppPassword)
-  ? nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: gmailUser, pass: gmailAppPassword },
-    })
-  : null;
+const emailReady = !!(brevoKey && senderEmail);
 
 // The send-to-store route carries photos as base64, so it gets a bigger body
 // limit. It must be registered before the general 1mb parser below.
@@ -103,7 +98,7 @@ async function callClaude(prompt, maxTokens) {
 }
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, model: MODEL, hasApiKey: !!apiKey, hasEmail: !!mailer });
+  res.json({ ok: true, model: MODEL, hasApiKey: !!apiKey, hasEmail: emailReady });
 });
 
 app.post('/api/classify', async (req, res) => {
@@ -184,14 +179,14 @@ function buildZip(files) {
 }
 
 const safeName = s => String(s || 'item').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40) || 'item';
-const MAX_ZIP_BYTES = 20 * 1024 * 1024; // keep well under Gmail's 25MB message limit
+const MAX_ZIP_BYTES = 12 * 1024 * 1024; // base64 adds ~33%; Brevo allows 20MB per email
 
 app.post('/api/send-to-store', async (req, res) => {
   const b = req.body || {};
   if (!b.customerPacket || !b.staffSummary) {
     return res.status(400).json({ error: 'customerPacket and staffSummary are required' });
   }
-  if (!mailer) {
+  if (!emailReady) {
     return res.status(503).json({ error: 'Email is not configured on this server' });
   }
   const typeLabel = CLAIM_TYPE_LABELS[b.claimType] || b.claimType || 'Claim';
@@ -223,13 +218,22 @@ app.post('/api/send-to-store', async (req, res) => {
   }
 
   try {
-    await mailer.sendMail({
-      from: `"Claim Assist" <${gmailUser}>`,
-      to: storeEmail,
-      subject: `New claim to review — ${typeLabel}${tracking ? ` (${tracking})` : ''}`,
-      text: `A customer submitted a claim through Claim Assist.\n\nClaim type: ${typeLabel}\nTracking: ${tracking || '—'}\nPhotos attached: ${photoCount}\nDenial risk: ${b.riskLevel || '—'}\n\nThe attached zip contains the customer copy, staff summary, claim data, and photos.\n\n${'='.repeat(60)}\nSTAFF SUMMARY\n${'='.repeat(60)}\n${b.staffSummary}\n`,
-      attachments: [{ filename: `claim-${safeName(tracking || typeLabel)}.zip`, content: zip, contentType: 'application/zip' }],
+    const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': brevoKey, 'content-type': 'application/json', accept: 'application/json' },
+      signal: AbortSignal.timeout(30000),
+      body: JSON.stringify({
+        sender: { name: 'Claim Assist', email: senderEmail },
+        to: [{ email: storeEmail }],
+        subject: `New claim to review — ${typeLabel}${tracking ? ` (${tracking})` : ''}`,
+        textContent: `A customer submitted a claim through Claim Assist.\n\nClaim type: ${typeLabel}\nTracking: ${tracking || '—'}\nPhotos attached: ${photoCount}\nDenial risk: ${b.riskLevel || '—'}\n\nThe attached zip contains the customer copy, staff summary, claim data, and photos.\n\n${'='.repeat(60)}\nSTAFF SUMMARY\n${'='.repeat(60)}\n${b.staffSummary}\n`,
+        attachment: [{ name: `claim-${safeName(tracking || typeLabel)}.zip`, content: zip.toString('base64') }],
+      }),
     });
+    if (!resp.ok) {
+      console.error('[send-to-store] Brevo responded', resp.status, await resp.text());
+      return res.status(502).json({ error: 'Failed to send email' });
+    }
     res.json({ ok: true, photos: photoCount });
   } catch (err) {
     console.error('[send-to-store]', err.message);
@@ -242,7 +246,7 @@ app.listen(PORT, () => {
   if (!apiKey) {
     console.warn('WARNING: ANTHROPIC_API_KEY is not set. /api/classify and /api/generate will return errors, and the frontend will fall back to its offline template logic.');
   }
-  if (!mailer) {
-    console.warn('WARNING: GMAIL_USER / GMAIL_APP_PASSWORD are not set. /api/send-to-store will return an error, and the "Send to store" button will show an error.');
+  if (!emailReady) {
+    console.warn('WARNING: BREVO_API_KEY / BREVO_SENDER_EMAIL are not set. /api/send-to-store will return an error, and the "Send to store" button will show an error.');
   }
 });

@@ -124,17 +124,6 @@
     font-size: 12.5px; color: var(--alert); display: none;
   }
   .offline-note.show { display: block; }
-
-  /* Phones */
-  .doc-actions { flex-wrap: wrap; }
-  @media (max-width: 640px) {
-    .app-wrap { padding: 22px 14px 60px; }
-    .panel { padding: 22px 18px 20px; }
-    .route-label { font-size: 10px; }
-    .doc-actions .btn { flex: 1 1 calc(50% - 5px); justify-content: center; }
-    .doc-actions #startOver { margin-left: 0 !important; flex-basis: 100%; }
-    .btn-row .btn { flex: 1 1 auto; justify-content: center; }
-  }
 </style>
 </head>
 <body>
@@ -377,8 +366,8 @@ function screenDone() {
     <div class="doc-actions">
       <button class="btn btn-ghost" id="printDoc">Print this copy</button>
       <button class="btn btn-ghost" id="downloadDoc">Download as text</button>
-      <button class="btn btn-ghost" id="emailDoc">Email this claim</button>
-      <button class="btn btn-primary" id="startOver" style="margin-left:auto;">Start a new claim</button>
+      <button class="btn btn-primary" id="sendStore">Send to store</button>
+      <button class="btn btn-ghost" id="startOver" style="margin-left:auto;">Start a new claim</button>
     </div>
     <div id="emailStatus" style="font-size:13px; margin-top:10px; min-height:18px;"></div>
   `;
@@ -431,8 +420,9 @@ function wireStep() {
         // Local-only preview (data URL). No storage backend in this prototype —
         // see README for what a production build would need here.
         const reader = new FileReader();
-        reader.onload = () => {
-          state.checklist[i].assetUrl = reader.result;
+        reader.onload = async () => {
+          // Shrink big phone photos so the whole claim fits in one email.
+          state.checklist[i].assetUrl = await shrinkImage(reader.result);
           state.checklist[i].have = true;
           render();
         };
@@ -469,30 +459,26 @@ function wireStep() {
       a.download = filename;
       a.click();
     };
-    document.getElementById('emailDoc').onclick = async () => {
-      const status = document.getElementById('emailStatus');
-      const btn = document.getElementById('emailDoc');
-      const swap = (color, html) => {
-        status.style.opacity = '0';
-        setTimeout(() => {
-          status.style.color = color;
-          status.innerHTML = html;
-          status.style.opacity = '1';
-        }, 150);
-      };
+    document.getElementById('sendStore').onclick = async () => {
+      const btn = document.getElementById('sendStore');
       btn.disabled = true;
-      swap('var(--ink-soft)', '<span class="spinner"></span>Sending…');
+      setStatus('var(--ink-soft)', '<span class="spinner"></span>Packaging your claim and photos, then sending…');
       try {
-        const result = await callApi('/api/send-claim', {
+        await callApi('/api/send-to-store', {
           customerPacket: state.finalDocs.customer_packet,
           staffSummary: state.finalDocs.staff_summary,
           claimType: state.claimType,
           tracking: state.tracking,
+          itemDescription: state.itemDescription,
+          declaredValue: state.declaredValue,
+          details: state.details,
+          riskLevel: state.finalDocs.risk_level,
+          evidence: state.checklist.map(c => ({ label: c.label, have: c.have, photo: c.assetUrl })),
         });
-        swap('var(--ok)', `Sent to ${result.sentTo}.`);
+        const n = state.checklist.filter(c => c.assetUrl).length;
+        setStatus('var(--ok)', `Sent to the store with ${n} photo${n === 1 ? '' : 's'}. They'll follow up with you.`);
       } catch (err) {
-        swap('var(--alert)', 'Could not send the email — check that email is configured on the server.');
-      } finally {
+        setStatus('var(--alert)', 'Could not send to the store. Please try again, or print the customer copy and bring it to the counter.');
         btn.disabled = false;
       }
     };
@@ -501,6 +487,36 @@ function wireStep() {
       goto(0);
     };
   }
+}
+
+// Fade-swap the status line under the document actions.
+function setStatus(color, html) {
+  const status = document.getElementById('emailStatus');
+  if (!status) return;
+  status.style.opacity = '0';
+  setTimeout(() => {
+    status.style.color = color;
+    status.innerHTML = html;
+    status.style.opacity = '1';
+  }, 150);
+}
+
+// Downscale an image data URL to max 1600px JPEG. Falls back to the original
+// if the browser can't decode it (e.g. HEIC on some browsers).
+function shrinkImage(dataUrl, maxSide = 1600, quality = 0.8) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
 }
 
 // ---- Backend calls ----

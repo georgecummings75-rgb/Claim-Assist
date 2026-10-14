@@ -27,13 +27,79 @@ const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5';
 const apiKey = process.env.ANTHROPIC_API_KEY;
 const anthropic = apiKey ? new Anthropic({ apiKey }) : null;
 
-// Email goes out through Brevo's HTTPS API. (Render's free plan blocks the SMTP
-// ports Gmail needs, so SMTP would just hang until it times out.)
-const brevoKey = process.env.BREVO_API_KEY;
-const senderEmail = process.env.BREVO_SENDER_EMAIL; // must be verified in Brevo
+// Email goes out through the Gmail API over HTTPS. (Render's free plan blocks the
+// SMTP ports Gmail's normal mail servers use, so SMTP would just hang. The Gmail
+// API uses port 443 like any website, so it works, and mail genuinely comes from
+// the Gmail account.) Needs a Google OAuth client and a refresh token; see README.
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const googleRefreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+const gmailSender = process.env.GMAIL_SENDER; // the Gmail address that authorized the token
 // Where "Send to store" claims go (override with STORE_EMAIL if it ever changes).
 const storeEmail = process.env.STORE_EMAIL || 'store7041@theupsstore.com';
-const emailReady = !!(brevoKey && senderEmail);
+const emailReady = !!(googleClientId && googleClientSecret && googleRefreshToken && gmailSender);
+
+let cachedToken = null; // { value, expiresAt }
+async function getAccessToken() {
+  if (cachedToken && Date.now() < cachedToken.expiresAt - 60000) return cachedToken.value;
+  const resp = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    signal: AbortSignal.timeout(20000),
+    body: new URLSearchParams({
+      client_id: googleClientId,
+      client_secret: googleClientSecret,
+      refresh_token: googleRefreshToken,
+      grant_type: 'refresh_token',
+    }),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data.access_token) {
+    throw new Error(`Google token refresh failed (${resp.status}): ${JSON.stringify(data)}`);
+  }
+  cachedToken = { value: data.access_token, expiresAt: Date.now() + (data.expires_in || 3600) * 1000 };
+  return cachedToken.value;
+}
+
+const wrap76 = b64 => b64.replace(/.{1,76}/g, '$&\r\n').trimEnd();
+function buildMime({ from, to, subject, text, filename, zip }) {
+  const boundary = 'claimassist_' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const encSubject = `=?UTF-8?B?${Buffer.from(subject, 'utf8').toString('base64')}?=`;
+  return [
+    `From: Claim Assist <${from}>`,
+    `To: ${to}`,
+    `Subject: ${encSubject}`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/plain; charset="UTF-8"',
+    'Content-Transfer-Encoding: base64',
+    '',
+    wrap76(Buffer.from(text, 'utf8').toString('base64')),
+    `--${boundary}`,
+    `Content-Type: application/zip; name="${filename}"`,
+    'Content-Transfer-Encoding: base64',
+    `Content-Disposition: attachment; filename="${filename}"`,
+    '',
+    wrap76(zip.toString('base64')),
+    `--${boundary}--`,
+    '',
+  ].join('\r\n');
+}
+
+// Sends one email with a zip attachment. Throws on any failure.
+async function sendEmail({ to, subject, text, filename, zip }) {
+  const token = await getAccessToken();
+  const mime = buildMime({ from: gmailSender, to, subject, text, filename, zip });
+  const resp = await fetch('https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'message/rfc822' },
+    signal: AbortSignal.timeout(60000),
+    body: mime,
+  });
+  if (!resp.ok) throw new Error(`Gmail API responded ${resp.status}: ${await resp.text()}`);
+}
 
 // The send-to-store route carries photos as base64, so it gets a bigger body
 // limit. It must be registered before the general 1mb parser below.
@@ -179,7 +245,7 @@ function buildZip(files) {
 }
 
 const safeName = s => String(s || 'item').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40) || 'item';
-const MAX_ZIP_BYTES = 12 * 1024 * 1024; // base64 adds ~33%; Brevo allows 20MB per email
+const MAX_ZIP_BYTES = 15 * 1024 * 1024; // base64 adds ~33%; Gmail's limit is 25MB per message
 
 app.post('/api/send-to-store', async (req, res) => {
   const b = req.body || {};
@@ -218,22 +284,13 @@ app.post('/api/send-to-store', async (req, res) => {
   }
 
   try {
-    const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: { 'api-key': brevoKey, 'content-type': 'application/json', accept: 'application/json' },
-      signal: AbortSignal.timeout(30000),
-      body: JSON.stringify({
-        sender: { name: 'Claim Assist', email: senderEmail },
-        to: [{ email: storeEmail }],
-        subject: `New claim to review — ${typeLabel}${tracking ? ` (${tracking})` : ''}`,
-        textContent: `A customer submitted a claim through Claim Assist.\n\nClaim type: ${typeLabel}\nTracking: ${tracking || '—'}\nPhotos attached: ${photoCount}\nDenial risk: ${b.riskLevel || '—'}\n\nThe attached zip contains the customer copy, staff summary, claim data, and photos.\n\n${'='.repeat(60)}\nSTAFF SUMMARY\n${'='.repeat(60)}\n${b.staffSummary}\n`,
-        attachment: [{ name: `claim-${safeName(tracking || typeLabel)}.zip`, content: zip.toString('base64') }],
-      }),
+    await sendEmail({
+      to: storeEmail,
+      subject: `New claim to review — ${typeLabel}${tracking ? ` (${tracking})` : ''}`,
+      text: `A customer submitted a claim through Claim Assist.\n\nClaim type: ${typeLabel}\nTracking: ${tracking || '—'}\nPhotos attached: ${photoCount}\nDenial risk: ${b.riskLevel || '—'}\n\nThe attached zip contains the customer copy, staff summary, claim data, and photos.\n\n${'='.repeat(60)}\nSTAFF SUMMARY\n${'='.repeat(60)}\n${b.staffSummary}\n`,
+      filename: `claim-${safeName(tracking || typeLabel)}.zip`,
+      zip,
     });
-    if (!resp.ok) {
-      console.error('[send-to-store] Brevo responded', resp.status, await resp.text());
-      return res.status(502).json({ error: 'Failed to send email' });
-    }
     res.json({ ok: true, photos: photoCount });
   } catch (err) {
     console.error('[send-to-store]', err.message);
@@ -247,6 +304,6 @@ app.listen(PORT, () => {
     console.warn('WARNING: ANTHROPIC_API_KEY is not set. /api/classify and /api/generate will return errors, and the frontend will fall back to its offline template logic.');
   }
   if (!emailReady) {
-    console.warn('WARNING: BREVO_API_KEY / BREVO_SENDER_EMAIL are not set. /api/send-to-store will return an error, and the "Send to store" button will show an error.');
+    console.warn('WARNING: Gmail API is not configured (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, GMAIL_SENDER). /api/send-to-store will return an error, and the "Send to store" button will show an error.');
   }
 });
